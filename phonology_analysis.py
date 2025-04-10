@@ -28,6 +28,8 @@ voiced_obstruents = {'バ', 'ビ', 'ブ', 'ベ', 'ボ',
 
 # small katakana (ya, yu, yo) → lightness and smallness
 # note: small katakana are not counted in mora count
+# small tsu (っ) is not included in this list
+# because it is not a vowel
 small_katakana = {'ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ャ', 'ュ', 'ョ'}
 
 
