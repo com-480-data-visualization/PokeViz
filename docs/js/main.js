@@ -12,12 +12,12 @@ let currentFilters = {
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Load Pokémon stats data
-        const statsResponse = await fetch('./pokemon_stats.csv');
+        const statsResponse = await fetch('./data/pokemon_stats.csv');
         const statsText = await statsResponse.text();
         pokemonData = d3.csvParse(statsText);
 
         // Load phonology data
-        const phonologyResponse = await fetch('./pokemon_phonology.csv');
+        const phonologyResponse = await fetch('./data/pokemon_phonology.csv');
         const phonologyText = await phonologyResponse.text();
         phonologyData = d3.csvParse(phonologyText);
 
