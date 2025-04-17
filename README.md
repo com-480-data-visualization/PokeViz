@@ -54,6 +54,30 @@ Can be found in the `/eda` folder!
 
 **10% of the final grade**
 
+### Project Goal & Current Visualizations
+We've decided to get ahead on the actual MVP implementation for the website in order to spend more time focusing on the linguistic portion, which will require some additional data aggregation/processing on our end (but we believe will be well worth the effort to tell an interesting story!). So far, we've implemented the basis of an [interactive Pokédex](https://com-480-data-visualization.github.io/PokeViz/) which allows users to:
+- View base stats for any of the 1025 Pokémon in the franchise (Generations 1-9) ![image](https://github.com/user-attachments/assets/3fb01425-964a-4af0-b342-241c8a5d3aca)
+
+- Navigate an interactive bar graph displaying the top `n` Pokémon for any given stat, with the ability to filter by type and generation ![image](https://github.com/user-attachments/assets/f4a2e81f-8008-495b-a1ed-162c341dda13)
+
+- Observe a rudimentary correlation between Pokémon stat total and their cumulative phonology score, which is our own metric derived from the paper referenced in Milestone 1 (see `phonology_analysis.py`)  ![image](https://github.com/user-attachments/assets/a70f591a-e48f-44a2-9150-54da9a8aaa7f)
+
+These visualizations were built mainly drawing inspiration from these lectures:
+- [D3.js](https://moodle.epfl.ch/pluginfile.php/2320166/mod_resource/content/0/4_2_D3.pdf)
+  - Selection methods, append(), enter(), reading CSVs, fetching from PokéAPI
+- [Interactions](https://moodle.epfl.ch/pluginfile.php/2321913/mod_resource/content/0/5_1_Interaction.pdf)
+  - Incremental text search
+- [More Interactive D3](https://moodle.epfl.ch/pluginfile.php/2321914/mod_resource/content/0/5_2_More_interactive_d3.pdf)
+  - Scales, Axes, Max-Min, Transform, Event Listeners
+- [Tabular Data](https://moodle.epfl.ch/pluginfile.php/2483604/mod_resource/content/0/11_1_Tabular_data.pdf)
+  - Scatterplots, Dot Charts, Bar Charts
+
+### Planned Extra Features
+As previously mentioned we want the linguistic component to be a prominent highlight of this project, so we'll be dedicating quite a bit of time moving forward to improving those specific visualizations and drawing comparisons between Japanese and English name strengths, some of which will require collecting that data ourselves (which should not be very time-consuming). Specifically, we want to determine if there is a similar positive correlation between phonology score and Pokémon metrics w.r.t. English Pokémon names as well. Some other nice-to-have but non-essential features we'd like to include are:
+- Making a playable Pokémon character that is able to run around and "discover" different visualizations, in the style of Pokémon games
+- A map of all the franchise's regions displaying the geographical distribution of Pokémon
+- 3D visualizations for height comparisons between Pokémon
+- General bug fixes and beautifying the UI (consistent Pokémon-themed color/font schema, background, animations, etc.)
 
 ## Milestone 3 (30th May, 5pm)
 
