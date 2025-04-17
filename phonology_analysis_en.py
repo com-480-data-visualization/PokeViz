@@ -22,3 +22,4 @@ df[["segment_count", "a_count", "u_count", "coronal_count", "total_score_en"]] =
 
 df.to_csv("pokemon_phonology_en.csv", index=False)
 print("Saved：pokemon_phonology_en.csv")
+
