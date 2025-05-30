@@ -83,6 +83,59 @@ As previously mentioned we want the linguistic component to be a prominent highl
 
 **80% of the final grade**
 
+### Final Implementation Summary (Milestone 3)
+
+In Milestone 3, we focused on realizing the core ideas outlined in Milestone 2, particularly enhancing the linguistic visualizations and overall user experience. We implemented the following:
+
+- **Phonology Comparison**: Added new visualizations comparing phonology scores and stat totals for both Japanese and English Pokémon names, based on our manually collected data.
+- **Design Improvements**: Refined the UI with a consistent Pokémon-inspired color palette, updated typography, and custom background elements.
+- **Interactive Enhancements**: Improved interactivity with smoother transitions, tooltip updates, and responsive layout adjustments across devices.
+- **Documentation**: Prepared a process book detailing the design and development journey, as well as a screencast highlighting the final product.
+
+These changes helped us deliver a cohesive and engaging interactive Pokédex that connects linguistic features with game design trends across generations.
+
+### How to open the Process Book
+
+The Process Book is included as a PDF file in this repository.
+
+To read it:
+
+1. Download or clone this repository.
+2. Locate the file named: `process_book.pdf`
+3. Open it with any PDF reader (e.g., Preview on macOS, Adobe Reader, browser PDF viewer).
+
+Alternatively, you can [view the PDF directly on GitHub](./process_book.pdf).
+
+---
+
+### How to run the Web App locally
+
+To view the interactive Pokédex web application on your local machine:
+
+#### Step 1: Clone this repository
+
+```bash
+git clone https://github.com/com-480-data-visualization/PokeViz.git
+cd PokeViz/web/html/
+```
+
+#### Step 2: Start a local HTTP server
+
+If you have Python installed:
+
+```bash
+# For Python 3.x
+python -m http.server 8000
+```
+This will start a local server at port 8000.
+
+#### Step 3: Open the app in your browser
+Visit the following URL in your browser:
+
+````
+http://localhost:8000/
+````
+Now you can explore all the visualizations in a local environment.
 
 ## Late policy
 
