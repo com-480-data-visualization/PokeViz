@@ -116,7 +116,7 @@ To view the interactive Pokédex web application on your local machine:
 
 ```bash
 git clone https://github.com/com-480-data-visualization/PokeViz.git
-cd PokeViz/web/html/
+cd PokeViz/docs/
 ```
 
 #### Step 2: Start a local HTTP server
