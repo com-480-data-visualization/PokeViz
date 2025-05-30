@@ -1,4 +1,3 @@
-// Global variables
 let pokemonData = [];
 let phonologyData = [];
 let currentFilters = {
@@ -7,128 +6,362 @@ let currentFilters = {
     stat: 'hp',
     limit: 20
 };
+let radarChart;
+let colorThief = new ColorThief();
 
-// Load data when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Load Pokémon stats data
+
         const statsResponse = await fetch('./data/pokemon_stats.csv');
         const statsText = await statsResponse.text();
         pokemonData = d3.csvParse(statsText);
 
-        // Load phonology data
         const phonologyResponse = await fetch('./data/pokemon_phonology.csv');
         const phonologyText = await phonologyResponse.text();
         phonologyData = d3.csvParse(phonologyText);
 
-        // Initialize the search functionality
         initializeSearch();
         
-        // Display initial Pokémon (e.g., Bulbasaur)
         displayPokemon('bulbasaur');
     } catch (error) {
         console.error('Error loading data:', error);
     }
 });
 
-// Initialize search functionality
 function initializeSearch() {
     const searchInput = document.getElementById('pokemon-search');
+    const searchContainer = searchInput.parentElement;
+    
+    const autocompleteContainer = document.createElement('div');
+    autocompleteContainer.className = 'autocomplete-container';
+    searchContainer.appendChild(autocompleteContainer);
+    
+    let selectedIndex = -1;
+    
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
-        const matchingPokemon = pokemonData.find(pokemon => 
+        const matchingPokemon = pokemonData.filter(pokemon => 
             pokemon.name_en.toLowerCase().includes(searchTerm)
-        );
+        ).slice(0, 5); 
         
-        if (matchingPokemon) {
-            displayPokemon(matchingPokemon.name_en);
+        autocompleteContainer.innerHTML = '';
+        
+        if (searchTerm && matchingPokemon.length > 0) {
+            matchingPokemon.forEach((pokemon, index) => {
+                const suggestion = document.createElement('div');
+                suggestion.className = 'autocomplete-suggestion';
+                suggestion.textContent = pokemon.name_en;
+                
+                const regex = new RegExp(searchTerm, 'gi');
+                suggestion.innerHTML = pokemon.name_en.replace(regex, match => `<strong>${match}</strong>`);
+                
+                suggestion.addEventListener('click', () => {
+                    searchInput.value = pokemon.name_en;
+                    autocompleteContainer.innerHTML = '';
+                    displayPokemon(pokemon.name_en);
+                });
+                
+                suggestion.addEventListener('mouseover', () => {
+                    selectedIndex = index;
+                    updateSelectedSuggestion();
+                });
+                
+                autocompleteContainer.appendChild(suggestion);
+            });
+        } else {
+            autocompleteContainer.innerHTML = '';
+        }
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+        const suggestions = autocompleteContainer.children;
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+                updateSelectedSuggestion();
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelectedSuggestion();
+                break;
+                
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+                    const selectedPokemon = suggestions[selectedIndex].textContent;
+                    searchInput.value = selectedPokemon;
+                    autocompleteContainer.innerHTML = '';
+                    displayPokemon(selectedPokemon);
+                }
+                break;
+                
+            case 'Escape':
+                autocompleteContainer.innerHTML = '';
+                selectedIndex = -1;
+                break;
+        }
+    });
+    
+    function updateSelectedSuggestion() {
+        const suggestions = autocompleteContainer.children;
+        Array.from(suggestions).forEach((suggestion, index) => {
+            suggestion.classList.toggle('selected', index === selectedIndex);
+        });
+    }
+    
+    document.addEventListener('click', (e) => {
+        if (!searchContainer.contains(e.target)) {
+            autocompleteContainer.innerHTML = '';
+            selectedIndex = -1;
         }
     });
 }
 
-// Display Pokémon information
+
 function displayPokemon(pokemonName) {
     const pokemon = pokemonData.find(p => p.name_en.toLowerCase() === pokemonName.toLowerCase());
     const phonology = phonologyData.find(p => p.name_en.toLowerCase() === pokemonName.toLowerCase());
     
     if (!pokemon) return;
 
-    // Update sprite
+    const primaryType = pokemon.types.split(',')[0].trim().toLowerCase();
+    
+    const pokemonPanel = document.querySelector('.pokemon-panel');
+    if (pokemonPanel) {
+        pokemonPanel.setAttribute('data-type', primaryType);
+    }
+
     updateSprite(pokemon);
-
-    // Update stats display
     updateStatsDisplay(pokemon);
-
-    // Create visualizations
+    createRadarChart(pokemon);
     createStatsChart(pokemon, currentFilters);
     createLinguisticChart(pokemon, phonology);
 }
 
-// Update Pokémon sprite
 function updateSprite(pokemon) {
     const spriteContainer = document.getElementById('pokemon-sprite');
-    
-    // Clear previous content
     spriteContainer.innerHTML = '';
+
+    const staticURL = pokemon.sprite_url;
+    const gifURL = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${pokemon.id}.gif`;
+
+    const img = document.createElement('img');
+    img.crossOrigin = "Anonymous"; // Enable CORS
+    img.src = staticURL; // show static sprite by default
+    img.alt = pokemon.name_en;
+    img.className = 'pokemon-sprite-img';
+
+    img.onload = function() {
+        try {   
+            const dominantColor = colorThief.getColor(img);
+            const palette = colorThief.getPalette(img, 5);
+            
+            const dominantHex = rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2]);
+            const paletteHex = palette.map(color => rgbToHex(color[0], color[1], color[2]));
+            
+            updateUIColors(dominantHex, paletteHex);
+        } catch (error) {
+            console.warn('Could not extract colors from sprite:', error);
+
+            const primaryType = pokemon.types.split(',')[0].trim().toLowerCase();
+            updateUIColors(getTypeColor(primaryType), [getTypeColor(primaryType)]);
+        }
+    };
+
+
+    img.onerror = function() {
+        console.warn("Failed to load sprite image");
+
+        const primaryType = pokemon.types.split(',')[0].trim().toLowerCase();
+        updateUIColors(getTypeColor(primaryType), [getTypeColor(primaryType)]);
+    };
+
+    img.addEventListener('mouseover', () => {
+        img.src = gifURL;
+    });
     
-    // Create a loading indicator
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'loading-indicator';
-    loadingDiv.innerHTML = 'Loading...';
-    spriteContainer.appendChild(loadingDiv);
-    
-    // Fetch sprite from Pokémon API
-    fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.name_en.toLowerCase()}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Pokémon not found');
+    img.addEventListener('mouseout', () => {
+        img.src = staticURL;
+    });
+
+    spriteContainer.appendChild(img);
+}
+
+// Helper function to convert RGB to Hex
+function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+}
+
+// Helper function to get type color
+function getTypeColor(type) {
+    const typeColors = {
+        normal: '#A8A878',
+        fire: '#F08030',
+        water: '#6890F0',
+        electric: '#F8D030',
+        grass: '#78C850',
+        ice: '#98D8D8',
+        fighting: '#C03028',
+        poison: '#A040A0',
+        ground: '#E0C068',
+        flying: '#A890F0',
+        psychic: '#F85888',
+        bug: '#A8B820',
+        rock: '#B8A038',
+        ghost: '#705898',
+        dragon: '#7038F8',
+        dark: '#705848',
+        steel: '#B8B8D0',
+        fairy: '#EE99AC'
+    };
+    return typeColors[type.toLowerCase()] || '#A8A878';
+}
+
+// Update UI colors based on sprite colors
+function updateUIColors(dominantColor, palette) {
+    const pokemonPanel = document.querySelector('.pokemon-panel');
+    if (!pokemonPanel) return;
+
+    // Update CSS variables
+    document.documentElement.style.setProperty('--pokemon-primary', dominantColor);
+    document.documentElement.style.setProperty('--pokemon-secondary', palette[1] || dominantColor);
+    document.documentElement.style.setProperty('--pokemon-accent', palette[2] || palette[1] || dominantColor);
+
+    // Update panel background with a more subtle gradient
+    pokemonPanel.style.background = `linear-gradient(135deg, ${dominantColor}22, #fff)`;
+
+    // Update stat bars with a more vibrant color
+    const statBars = document.querySelectorAll('.stat-bar');
+    statBars.forEach(bar => {
+        bar.style.backgroundColor = dominantColor;
+    });
+
+    // Update chart borders
+    const chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(container => {
+        container.style.borderColor = dominantColor;
+    });
+
+    // Update type text colors
+    const typeTexts = document.querySelectorAll('.type-text');
+    typeTexts.forEach(text => {
+        text.style.color = dominantColor;
+    });
+
+    // Update text color based on background brightness
+    const brightness = getBrightness(dominantColor);
+    const textColor = brightness > 128 ? '#000' : '#fff';
+    const pokemonName = document.querySelector('.pokemon-name h2');
+    if (pokemonName) {
+        pokemonName.style.color = dominantColor;
+    }
+
+    // Update radar chart if it exists
+    if (radarChart) {
+        createRadarChart(pokemonData.find(p => p.name_en === document.querySelector('.pokemon-name h2').textContent));
+    }
+}
+
+// Helper function to calculate color brightness
+function getBrightness(hexColor) {
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+function createRadarChart(pokemon) {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+
+    const maxAttack = Math.max(...pokemonData.map(p => +p.attack));
+    const maxDefense = Math.max(...pokemonData.map(p => +p.defense));
+    const maxSpAtk = Math.max(...pokemonData.map(p => +p['special-attack']));
+    const maxSpDef = Math.max(...pokemonData.map(p => +p['special-defense']));
+    const maxSpeed = Math.max(...pokemonData.map(p => +p.speed));
+    const maxPhonEN = 22; 
+    const maxPhonJA = 22;
+
+    const physical = ((+pokemon.attack + +pokemon.defense) / 2) / ((maxAttack + maxDefense) / 2) * 100;
+    const special = ((+pokemon['special-attack'] + +pokemon['special-defense']) / 2) / ((maxSpAtk + maxSpDef) / 2) * 100;
+    const speed = +pokemon.speed / maxSpeed * 100;
+    const phon_en = +pokemon.total_score_en / maxPhonEN * 100;
+    const phon_ja = +pokemon.total_score_ja / maxPhonJA * 100;
+
+    // Get the current primary color from CSS variables
+    const primaryColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--pokemon-primary').trim();
+
+    const data = {
+        labels: ['Phys', 'Spec', 'Speed', 'EN', 'JA'],
+        datasets: [{
+            label: '',
+            data: [physical, special, speed, phon_en, phon_ja],
+            fill: true,
+            backgroundColor: `${primaryColor}33`, // 20% opacity
+            borderColor: primaryColor,
+            pointBackgroundColor: primaryColor,
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: primaryColor
+        }]
+    };
+
+    const config = {
+        type: 'radar',
+        data: data,
+        options: {
+            responsive: true,
+            scales: {
+                r: {
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    pointLabels: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: `${primaryColor}22` // 13% opacity
+                    },
+                    angleLines: {
+                        color: `${primaryColor}22` // 13% opacity
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function (tooltipItems) {
+                            const fullLabels = {
+                                'Phys': 'Physical Power',
+                                'Spec': 'Special Power',
+                                'Speed': 'Speed',
+                                'EN': 'Phonology (EN)',
+                                'JA': 'Phonology (JA)'
+                            };
+                            return fullLabels[tooltipItems[0].label] || tooltipItems[0].label;
+                        },
+                        label: function (tooltipItem) {
+                            return `${tooltipItem.formattedValue}%`;
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                }
             }
-            return response.json();
-        })
-        .then(data => {
-            // Clear loading indicator
-            spriteContainer.innerHTML = '';
-            
-            // Create and append the image
-            const img = document.createElement('img');
-            // Use animated sprite
-            img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${pokemon.id}.gif`;
-            img.alt = pokemon.name_en;
-            img.className = 'pokemon-sprite-img';
-            
-            // Add fallback for missing sprites
-            img.onerror = function() {
-                // Try another animated sprite source
-                this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${pokemon.id}.gif`;
-                this.onerror = function() {
-                    // If animated sprite fails, fall back to static sprite
-                    this.src = data.sprites.front_default;
-                    this.onerror = function() {
-                        // If all else fails, use the default sprite
-                        this.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png';
-                        this.onerror = null; // Prevent infinite loop
-                    };
-                };
-            };
-            
-            spriteContainer.appendChild(img);
-        })
-        .catch(error => {
-            console.error('Error fetching sprite:', error);
-            
-            // Clear loading indicator
-            spriteContainer.innerHTML = '';
-            
-            // Create a placeholder div for the sprite
-            const placeholder = document.createElement('div');
-            placeholder.className = 'sprite-placeholder';
-            placeholder.innerHTML = `
-                <div class="placeholder-text">${pokemon.name_en}</div>
-                <div class="placeholder-id">#${pokemon.id}</div>
-            `;
-            
-            spriteContainer.appendChild(placeholder);
-        });
+        }
+    };
+
+    if (radarChart) radarChart.destroy();
+    radarChart = new Chart(ctx, config);
 }
 
 // Update stats display
@@ -147,12 +380,19 @@ function updateStatsDisplay(pokemon) {
     `;
     statsContainer.appendChild(nameDiv);
     
-    // Create info display
+    // Create info display with colored type text
     const infoDiv = document.createElement('div');
     infoDiv.className = 'pokemon-info';
+    
+    // Create colored type text
+    const typeText = pokemon.types.split(',').map(type => {
+        const trimmedType = type.trim().toLowerCase();
+        return `<span class="type-text ${trimmedType}">${trimmedType}</span>`;
+    }).join(', ');
+    
     infoDiv.innerHTML = `
         <p><strong>Generation:</strong> ${pokemon.generation}</p>
-        <p><strong>Types:</strong> ${pokemon.types}</p>
+        <p><strong>Types:</strong> ${typeText}</p>
         <p><strong>Status:</strong> ${getPokemonStatus(pokemon)}</p>
     `;
     statsContainer.appendChild(infoDiv);
@@ -181,7 +421,9 @@ function updateStatsDisplay(pokemon) {
         { name: 'Defense', value: +pokemon.defense, max: maxStats.defense },
         { name: 'Sp. Attack', value: +pokemon['special-attack'], max: maxStats['special-attack'] },
         { name: 'Sp. Defense', value: +pokemon['special-defense'], max: maxStats['special-defense'] },
-        { name: 'Speed', value: +pokemon.speed, max: maxStats.speed }
+        { name: 'Speed', value: +pokemon.speed, max: maxStats.speed },
+        { name: 'Phonology (EN)', value: +pokemon.total_score_en, max: 22 },
+        { name: 'Phonology (JA)', value: +pokemon.total_score_ja, max: 22 }
     ];
     
     stats.forEach(stat => {
@@ -453,10 +695,10 @@ function createStatsChart(pokemon, filters = null) {
             .attr('width', xScale.bandwidth())
             .attr('height', d => innerHeight - yScale(d.value))
             .attr('fill', d => {
-                if (d.isSelected) return 'red';
-                if (d.isMythical) return 'gold';
-                if (d.isLegendary) return 'purple';
-                return '#3d7dca';
+                if (d.isSelected) return '#264744';
+                if (d.isMythical) return '#decbae';
+                if (d.isLegendary) return '#d68f4e';
+                return '#7a9dad';
             })
             .attr('opacity', d => d.isSelected ? 1 : 0.7)
             .style('cursor', 'pointer');
@@ -575,7 +817,7 @@ function createStatsChart(pokemon, filters = null) {
             .attr('y', 0)
             .attr('width', 15)
             .attr('height', 15)
-            .attr('fill', '#3d7dca');
+            .attr('fill', '#7a9dad');
         
         legend.append('text')
             .attr('x', 25)
@@ -589,7 +831,7 @@ function createStatsChart(pokemon, filters = null) {
             .attr('y', 25)
             .attr('width', 15)
             .attr('height', 15)
-            .attr('fill', 'purple');
+            .attr('fill', '#d68f4e');
         
         legend.append('text')
             .attr('x', 25)
@@ -603,7 +845,7 @@ function createStatsChart(pokemon, filters = null) {
             .attr('y', 50)
             .attr('width', 15)
             .attr('height', 15)
-            .attr('fill', 'gold');
+            .attr('fill', '#decbae');
         
         legend.append('text')
             .attr('x', 25)
@@ -617,7 +859,7 @@ function createStatsChart(pokemon, filters = null) {
             .attr('y', 75)
             .attr('width', 15)
             .attr('height', 15)
-            .attr('fill', 'red');
+            .attr('fill', '#264744');
         
         legend.append('text')
             .attr('x', 25)
@@ -741,10 +983,10 @@ function createLinguisticChart(pokemon, phonology) {
         .attr('cy', d => yScale(d.score))
         .attr('r', d => d.isSelected ? 8 : 5)
         .attr('fill', d => {
-            if (d.isSelected) return 'red';
-            if (d.isMythical) return 'gold';
-            if (d.isLegendary) return 'purple';
-            return '#3d7dca';
+            if (d.isSelected) return '#264744';
+            if (d.isMythical) return '#decbae';
+            if (d.isLegendary) return '#d68f4e';
+            return '#7a9dad';
         })
         .attr('opacity', d => d.isSelected ? 1 : 0.7)
         .style('cursor', 'pointer');
@@ -798,7 +1040,7 @@ function createLinguisticChart(pokemon, phonology) {
         .attr('cx', 0)
         .attr('cy', 0)
         .attr('r', 5)
-        .attr('fill', '#3d7dca');
+        .attr('fill', '#7a9dad');
     
     legend.append('text')
         .attr('x', 10)
@@ -811,7 +1053,7 @@ function createLinguisticChart(pokemon, phonology) {
         .attr('cx', 0)
         .attr('cy', 25)
         .attr('r', 5)
-        .attr('fill', 'purple');
+        .attr('fill', '#d68f4e');
     
     legend.append('text')
         .attr('x', 10)
@@ -824,7 +1066,7 @@ function createLinguisticChart(pokemon, phonology) {
         .attr('cx', 0)
         .attr('cy', 50)
         .attr('r', 5)
-        .attr('fill', 'gold');
+        .attr('fill', '#decbae');
     
     legend.append('text')
         .attr('x', 10)
@@ -837,7 +1079,7 @@ function createLinguisticChart(pokemon, phonology) {
         .attr('cx', 0)
         .attr('cy', 75)
         .attr('r', 5)
-        .attr('fill', 'red');
+        .attr('fill', '#264744');
     
     legend.append('text')
         .attr('x', 10)

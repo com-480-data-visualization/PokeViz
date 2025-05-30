@@ -49,7 +49,7 @@ def count_vowel_strength(katakana_name):
     
     return sum(vowel_strength.get(char, 0) for char in processed_name)
 
-df = pd.read_csv("pokemon_stats.csv")
+df = pd.read_csv("docs/data/pokemon_stats.csv")
 
 phonology_data = []
 
@@ -72,5 +72,10 @@ for _, row in df.iterrows():
     })
 
 phon_df = pd.DataFrame(phonology_data)
-phon_df.to_csv("pokemon_phonology.csv", index=False)
-print("saved")
+phon_df.rename(columns={"total_score": "total_score_ja"}, inplace=True)
+
+# Save full breakdown
+phon_df.to_csv("pokemon_phonology_ja.csv", index=False)
+
+# Save minimal for merging
+phon_df[["id", "name_en", "total_score_ja"]].to_csv("temp_score_ja.csv", index=False)

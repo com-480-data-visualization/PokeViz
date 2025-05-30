@@ -113,6 +113,14 @@ header h1 {
     color: #555;
 }
 
+.radar-chart-container {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f3f3f3;
+    border-radius: 12px;
+    text-align: center;
+}
+
 .placeholder-text {
     font-size: 1.5em;
     font-weight: bold;

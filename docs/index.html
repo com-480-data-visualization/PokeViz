@@ -1,36 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Pokédex</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Interactive Pokédex</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    @font-face {
+      font-family: 'PokemonSolidLocal';
+      src: url('./fonts/Pokemon Solid.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    #main-title {
+      font-family: 'PokemonSolidLocal', sans-serif;
+      font-size: 3.5rem;
+      text-align: center;
+      margin: 30px 0 10px;
+      background: linear-gradient(to right, #264744, #decbae, #d68f4e, #7a9dad, #92a290);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Interactive Pokédex</h1>
-            <p>Explore Pokémon stats and linguistic patterns</p>
-        </header>
-        
-        <main>
-            <div class="search-section">
-                <input type="text" id="pokemon-search" placeholder="Search for a Pokémon...">
-            </div>
-            
-            <div class="pokemon-display">
-                <div class="pokemon-info">
-                    <div id="pokemon-sprite"></div>
-                    <div id="pokemon-stats"></div>
-                </div>
-                <div class="visualizations">
-                    <div id="stats-chart"></div>
-                    <div id="linguistic-chart"></div>
-                </div>
-            </div>
-        </main>
-    </div>
-    <script src="js/main.js"></script>
+  <div class="container">
+    <header>
+      <h1 id="main-title">Interactive Pokédex</h1>
+      <p>Explore Pokémon Stats and Linguistic Patterns</p>
+    </header>
+
+    <main>
+      <div class="search-section">
+        <input type="text" id="pokemon-search" placeholder="Search for a Pokémon...">
+      </div>
+
+      <div class="pokemon-display pokemon-panel">
+        <div class="pokemon-info">
+          <div id="pokemon-sprite"></div>
+          <div id="pokemon-stats"></div>
+          <div class="radar-chart-container">
+            <canvas id="radarChart" width="280" height="280"></canvas>
+          </div>
+        </div>
+        <div class="visualizations">
+          <div id="stats-chart"></div>
+          <div id="linguistic-chart"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.min.js"></script>
+  <script src="js/main.js"></script>
 </body>
-</html> 
+</html>

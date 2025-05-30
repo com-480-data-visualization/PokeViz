@@ -1,6 +1,7 @@
 from g2p_en import G2p
 import pandas as pd
 import nltk
+
 nltk.download('averaged_perceptron_tagger_eng')
 g2p = G2p()
 
@@ -15,11 +16,13 @@ def analyze_name(name):
     total_score = segment_count + a_count + u_count + coronal_count
     return segment_count, a_count, u_count, coronal_count, total_score
 
-df = pd.read_csv("pokemon_stats.csv")
+df = pd.read_csv("docs/data/pokemon_stats.csv")
 
 results = df["name_en"].apply(analyze_name)
 df[["segment_count", "a_count", "u_count", "coronal_count", "total_score_en"]] = pd.DataFrame(results.tolist(), index=df.index)
 
-df.to_csv("pokemon_phonology_en.csv", index=False)
-print("Saved：pokemon_phonology_en.csv")
+# Save full English breakdown
+df[["id", "name_en", "segment_count", "a_count", "u_count", "coronal_count", "total_score_en"]].to_csv("pokemon_phonology_en.csv", index=False)
 
+# Save minimal for merging
+df[["id", "name_en", "total_score_en"]].to_csv("temp_score_en.csv", index=False)
